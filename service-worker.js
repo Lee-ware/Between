@@ -1,9 +1,10 @@
 // BETWEEN — service worker: offline-first app shell caching
-const CACHE_NAME = 'between-v3.5.0-crowd';
+const CACHE_NAME = 'between-v3.5.1-crowd-fixes';
 const PRECACHE_URLS = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './icons/between-mark.svg',
   './css/style.css',
   './js/data.js',
   './js/utils.js',

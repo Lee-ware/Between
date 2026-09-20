@@ -168,6 +168,23 @@ const Utils = (() => {
     return d.innerHTML;
   }
 
+  function brandMark(className = '') {
+    const cls = className ? `between-brand-mark ${className}` : 'between-brand-mark';
+    return `<svg class="${cls}" viewBox="0 0 128 128" aria-hidden="true">
+      <defs>
+        <linearGradient id="between-g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#38d3ff"/><stop offset=".48" stop-color="#7c5cff"/><stop offset="1" stop-color="#ff5cf0"/></linearGradient>
+        <linearGradient id="between-g2" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9d42"/><stop offset=".45" stop-color="#ff5cf0"/><stop offset="1" stop-color="#38d3ff"/></linearGradient>
+        <linearGradient id="between-g3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#7c5cff"/><stop offset=".5" stop-color="#38d3ff"/><stop offset="1" stop-color="#ff9d42"/></linearGradient>
+      </defs>
+      <g class="brand-rings" fill="none" stroke-linecap="round">
+        <ellipse cx="64" cy="64" rx="42" ry="23" transform="rotate(-27 64 64)" stroke="url(#between-g1)" stroke-width="6"/>
+        <ellipse cx="64" cy="64" rx="42" ry="23" transform="rotate(27 64 64)" stroke="url(#between-g2)" stroke-width="6"/>
+        <ellipse cx="64" cy="64" rx="30" ry="39" stroke="url(#between-g3)" stroke-width="5" opacity=".9"/>
+      </g>
+      <g class="brand-core"><circle cx="64" cy="64" r="13" fill="#0b0b0d" stroke="currentColor" stroke-width="2.5"/><circle cx="59.8" cy="62" r="1.7" fill="#38d3ff"/><circle cx="68.2" cy="62" r="1.7" fill="#ff5cf0"/><path d="M60 68 Q64 71 68 68" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></g>
+    </svg>`;
+  }
+
   function icon(name) {
     const raw = ICONS[name] || '';
     // Icons ship without width/height (only a viewBox), which lets some browsers
@@ -180,6 +197,6 @@ const Utils = (() => {
   return {
     seededRandom, hashString, todayKey, pick, shuffle, clamp, cap,
     stripTrailingPunct, stripFramingPrefix, parseBinary, isYesNoShaped, parseList,
-    fmtNum, fmtPct, icon, escapeHtml
+    fmtNum, fmtPct, icon, brandMark, escapeHtml
   };
 })();

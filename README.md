@@ -1,8 +1,8 @@
-# BETWEEN — V2
+# BETWEEN — V3.5.1
 
-A curiosity + choice + knowledge entertainment playground. Mobile-first, installable PWA, fully local (no backend, no accounts, no tracking).
+A curiosity + choice + knowledge entertainment playground. Mobile-first, installable PWA, local-first (no accounts or personal tracking; optional anonymous Majority aggregate data).
 
-**This is V2** — an upgrade of the original V1 build. See `CHANGELOG.md` for exactly what changed and why, and `QA_REPORT.md` for what was actually tested (and what wasn't).
+**This is V3.5.1** — the local-first PWA now also has optional anonymous Majority crowd data through one Netlify Function. See the V3 changelogs for what changed and `QA_REPORT.md` for testing notes.
 
 ## What's inside
 

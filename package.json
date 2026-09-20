@@ -1,9 +1,9 @@
 {
   "name": "between",
   "private": true,
-  "version": "3.5.0",
+  "version": "3.5.1",
   "description": "BETWEEN — a curiosity, choice, and knowledge playground. Static site + one small serverless function for anonymous Majority-mode crowd data.",
   "dependencies": {
-    "@netlify/blobs": "latest"
+    "@netlify/blobs": "11.1.0"
   }
 }

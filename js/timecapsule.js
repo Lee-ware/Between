@@ -19,7 +19,7 @@ const TimeCapsule = (() => {
   const ELIGIBLE_MODES = ['pick_one', 'scenario', 'majority', 'prediction'];
 
   function isEligible(item, result) {
-    return ELIGIBLE_MODES.includes(item.mode) && !!result.chosenText;
+    return ELIGIBLE_MODES.includes(item.mode) && !!result.chosenText && Array.isArray(item.options) && item.options.length >= 2;
   }
 
   function save(item, result, periodKey) {

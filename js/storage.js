@@ -14,6 +14,7 @@ const Storage = (() => {
     moments: `${NS}:moments`,      // personal saved-experience archive
     timeCapsules: `${NS}:capsules`, // answers saved to revisit later
     crowdVoted: `${NS}:crowdvoted`, // which Majority items this device already voted on
+    brandEasterEgg: `${NS}:brand_easter_egg`, // rare logo easter egg shown once
   };
 
   // ---- Storage schema versioning & migrations ----
@@ -125,7 +126,7 @@ const Storage = (() => {
   const api = {
     KEYS,
     getHistory: () => read(KEYS.history, []),
-    setHistory: (h) => write(KEYS.history, h),
+    setHistory: (h) => write(KEYS.history, Array.isArray(h) ? h.slice(-500) : []),
     addHistory: (entry) => {
       const h = api.getHistory();
       h.push(entry);
@@ -170,7 +171,7 @@ const Storage = (() => {
     },
 
     getMoments: () => read(KEYS.moments, []),
-    setMoments: (m) => write(KEYS.moments, m),
+    setMoments: (m) => write(KEYS.moments, Array.isArray(m) ? m.slice(-300) : []),
     updateMoments: (mutator) => {
       const m = api.getMoments();
       mutator(m);
@@ -181,7 +182,7 @@ const Storage = (() => {
     },
 
     getTimeCapsules: () => read(KEYS.timeCapsules, []),
-    setTimeCapsules: (c) => write(KEYS.timeCapsules, c),
+    setTimeCapsules: (c) => write(KEYS.timeCapsules, Array.isArray(c) ? c.slice(-200) : []),
     updateTimeCapsules: (mutator) => {
       const c = api.getTimeCapsules();
       mutator(c);
@@ -191,6 +192,8 @@ const Storage = (() => {
     },
 
     getCrowdVoted: () => read(KEYS.crowdVoted, []),
+    getBrandEasterEggSeen: () => read(KEYS.brandEasterEgg, false) === true,
+    markBrandEasterEggSeen: () => write(KEYS.brandEasterEgg, true),
     addCrowdVoted: (itemId) => {
       const arr = api.getCrowdVoted();
       if (!arr.includes(itemId)) arr.push(itemId);
@@ -199,7 +202,7 @@ const Storage = (() => {
     },
 
     resetAll: () => {
-      Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+      Object.values(KEYS).filter(k => k !== KEYS.brandEasterEgg).forEach(k => localStorage.removeItem(k));
     },
 
     SCHEMA_VERSION,

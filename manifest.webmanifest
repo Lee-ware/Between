@@ -1,7 +1,7 @@
 {
   "name": "BETWEEN — Test your instincts.",
   "short_name": "BETWEEN",
-  "description": "A curiosity + choice + knowledge entertainment playground.",
+  "description": "A curiosity, choice, knowledge, and scenario playground.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

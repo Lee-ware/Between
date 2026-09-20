@@ -86,8 +86,12 @@ const Crowd = (() => {
   // result to show. Never throws, never blocks longer than TIMEOUT_MS.
   async function voteAndFetch(item, chosenText) {
     if (!hasVoted(item.id)) {
-      markVoted(item.id);
-      submitVote(item.id, chosenText); // fire-and-forget; don't make the UI wait on this
+      // Submit in the background. Only mark the device as having voted after
+      // the server accepts it, so a temporary outage does not permanently
+      // consume this browser's one-vote allowance.
+      submitVote(item.id, chosenText).then(result => {
+        if (result && typeof result.total === 'number') markVoted(item.id);
+      });
     }
     const data = await fetchResults(item.id);
     return summarize(data);

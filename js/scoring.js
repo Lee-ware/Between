@@ -60,7 +60,7 @@ const Scoring = (() => {
     if (stats.lastActiveDate !== today) {
       stats.lastActiveDate = today;
       if (!stats.daysActive.includes(today)) stats.daysActive.push(today);
-      if (stats.daysActive.length > 60) stats.daysActive.shift();
+      if (stats.daysActive.length > 365) stats.daysActive.shift();
     }
   }
 

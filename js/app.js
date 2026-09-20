@@ -41,7 +41,7 @@ const App = (() => {
     } catch (e) { /* history API unavailable in some embedded contexts — degrade silently */ }
   }
 
-  function renderTabScreen(screen, fromPopstate) {
+  function renderTabScreen(screen, fromPopstate, replaceHistory = false) {
     if (!TAB_SCREENS.includes(screen)) screen = 'home';
     singleFlow = null;
     currentTab = screen;
@@ -59,11 +59,16 @@ const App = (() => {
         default: Screens.home(r);
       }
     }, screen);
-    if (!fromPopstate) pushHistory({ screen });
+    if (!fromPopstate) pushHistory({ screen }, replaceHistory);
     window.scrollTo(0, 0);
   }
 
-  function navigate(screen) { renderTabScreen(screen, false); }
+  function navigate(screen, replaceHistory = false) { renderTabScreen(screen, false, replaceHistory); }
+
+  function back() {
+    if (window.history.length > 1) history.back();
+    else navigate(currentTab || 'home');
+  }
 
   window.addEventListener('popstate', (e) => {
     const state = e.state || { screen: 'home' };
@@ -105,7 +110,7 @@ const App = (() => {
   function startPassThePhone(gameMode) {
     ptpMatch = PassThePhone.newMatch(gameMode);
     if (!ptpMatch.questions.length) { Screens.toast('Not enough questions available right now.'); return; }
-    pushHistory({ screen: 'ptp' });
+    pushHistory({ screen: 'ptp' }, true);
     ptpRender();
   }
 
@@ -115,7 +120,7 @@ const App = (() => {
       if (PassThePhone.isDone(ptpMatch)) {
         Screens.ptpResults(root(), ptpMatch, {
           onAgain: () => startPassThePhone(ptpMatch.gameMode),
-          onDone: () => { ptpMatch = null; navigate('modes'); },
+          onDone: () => { ptpMatch = null; back(); },
         });
       } else {
         Screens.ptpPlay(root(), ptpMatch, {
@@ -126,7 +131,7 @@ const App = (() => {
           },
           onHandoff: () => { PassThePhone.confirmHandoff(ptpMatch); ptpRender(); },
           onNextRound: () => { PassThePhone.nextRound(ptpMatch); ptpRender(); },
-          onExit: () => { ptpMatch = null; navigate('modes'); },
+          onExit: () => { ptpMatch = null; back(); },
         });
       }
     }, 'ptp');
@@ -196,13 +201,9 @@ const App = (() => {
 
   function exitExperience() {
     // Session (if any) stays persisted so "Continue" can resume it.
-    // Real browser/back-gesture support: this pops back to whichever tab
-    // (Home / Modes / Daily) the person actually came from.
-    if (window.history.length > 1) {
-      history.back();
-    } else {
-      navigate(currentTab || 'home');
-    }
+    // Use the browser history so the same behavior works for the on-screen
+    // back button and the device/browser back gesture.
+    back();
   }
 
   // ---------------- Result handling ----------------
@@ -248,6 +249,11 @@ const App = (() => {
 
     if (result.chosenText) {
       Tendency.record(item, result.chosenText);
+    }
+
+    if (!Storage.getBrandEasterEggSeen() && Math.random() < 0.000002) {
+      Storage.markBrandEasterEggSeen();
+      setTimeout(() => Screens.brandEasterEgg(), 180);
     }
 
     // Reveal the "save" affordance now that there's something to save.
@@ -442,12 +448,12 @@ const App = (() => {
     pushHistory({ screen: 'home' }, true);
     renderTabScreen('home', true);
     if (boot) {
-      setTimeout(() => { boot.style.opacity = '0'; setTimeout(() => boot.remove(), 250); }, 260);
+      requestAnimationFrame(() => { boot.style.opacity = '0'; setTimeout(() => boot.remove(), 180); });
     }
   }
 
   return {
-    init, navigate,
+    init, navigate, back,
     beginSession, resumeSession, startSingle,
     exitExperience, handleResult, advanceExperience,
     promptInstall, runContentAudit, openCapsule, startPassThePhone,

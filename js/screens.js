@@ -292,7 +292,7 @@ const Screens = (() => {
         </div>
 
         <div class="profile-header">
-          <div class="profile-avatar">${Utils.icon('sparkle')}</div>
+          <div class="profile-avatar">${Utils.brandMark()}</div>
           <div style="font-weight:800; font-size:16px;">Your BETWEEN</div>
           <div style="color:var(--text-mute); font-size:12px; margin-top:2px;">Stored only on this device</div>
         </div>
@@ -327,7 +327,7 @@ const Screens = (() => {
         </div>
         <div class="mode-card" style="cursor:default;">
           <div class="mode-card-icon" style="background:var(--surface-3);">${Utils.icon('sparkle')}</div>
-          <div><div class="mode-card-title">Most played category</div><div class="mode-card-sub">${topCategory}</div></div>
+          <div><div class="mode-card-title">Most played category</div><div class="mode-card-sub">${Utils.escapeHtml(topCategory)}</div></div>
         </div>
         <div class="mode-card" style="cursor:default;">
           <div class="mode-card-icon" style="background:var(--surface-3);">${Utils.icon('ruler')}</div>
@@ -406,8 +406,8 @@ const Screens = (() => {
         <div class="settings-row"><div class="settings-label">Install BETWEEN</div>
           <button class="btn btn-sm btn-ghost" id="btn-install">Install</button>
         </div>
-        <div class="settings-row"><div><div class="settings-label">Privacy</div><div class="settings-sub">Your progress stays on this device.</div></div></div>
-        <div class="settings-row"><div><div class="settings-label">About BETWEEN</div><div class="settings-sub">V2.1 \u00b7 360 experiences \u00b7 fully local</div></div></div>
+        <div class="settings-row"><div><div class="settings-label">Privacy</div><div class="settings-sub">Your personal progress stays on this device. Majority votes are sent anonymously to build crowd results.</div></div></div>
+        <div class="settings-row"><div><div class="settings-label">About BETWEEN</div><div class="settings-sub">V3.5.1 \u00b7 360 experiences \u00b7 local-first</div></div></div>
 
         <div class="section-head"><div class="section-title">Data</div></div>
         <div class="btn-row" style="margin-top:6px;">
@@ -420,7 +420,7 @@ const Screens = (() => {
         <button class="btn danger-btn btn-block" id="btn-reset">Reset local progress</button>
       </div>
     `;
-    root.querySelector('#btn-back').addEventListener('click', () => App.navigate('profile'));
+    root.querySelector('#btn-back').addEventListener('click', () => App.back());
     root.querySelector('#sw-sound').addEventListener('click', (e) => {
       const on = Storage.updateSettings(x => x.sound = !x.sound).sound;
       e.currentTarget.classList.toggle('on', on);
@@ -459,7 +459,7 @@ const Screens = (() => {
           onConfirm: () => {
             Backup.importData(result.payload);
             toast('Data imported.');
-            App.navigate('home');
+            App.navigate('home', true);
           },
         });
       });
@@ -470,7 +470,7 @@ const Screens = (() => {
         body: 'This will erase your local BETWEEN history and stats. This can\u2019t be undone.',
         confirmLabel: 'Erase everything',
         danger: true,
-        onConfirm: () => { Storage.resetAll(); App.navigate('home'); }
+        onConfirm: () => { Storage.resetAll(); App.navigate('home', true); }
       });
     });
   }
@@ -553,6 +553,15 @@ const Screens = (() => {
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
     backdrop.querySelector('#modal-cancel').addEventListener('click', () => backdrop.remove());
     backdrop.querySelector('#modal-confirm').addEventListener('click', () => { backdrop.remove(); onConfirm(); });
+  }
+
+  function brandEasterEgg() {
+    if (document.querySelector('.between-easter-egg')) return;
+    const el = document.createElement('div');
+    el.className = 'between-easter-egg';
+    el.innerHTML = `${Utils.brandMark('easter-mark')}<span class="sr-only">BETWEEN</span>`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 900);
   }
 
   function toast(msg) {
@@ -642,7 +651,7 @@ const Screens = (() => {
         `}
       </div>
     `;
-    root.querySelector('#btn-back').addEventListener('click', () => App.navigate('profile'));
+    root.querySelector('#btn-back').addEventListener('click', () => App.back());
 
     root.querySelectorAll('[data-revisit]').forEach(btn => {
       btn.addEventListener('click', () => App.openCapsule(btn.dataset.revisit));
@@ -731,7 +740,7 @@ const Screens = (() => {
             <div>Your original answer is still saved, but the experience it came from has changed. You can remove this capsule from the list.</div>
           </div>
         </div>`;
-      root.querySelector('#btn-back').addEventListener('click', () => App.navigate('timecapsules'));
+      root.querySelector('#btn-back').addEventListener('click', () => App.back());
       return;
     }
 
@@ -744,15 +753,15 @@ const Screens = (() => {
         </div>
         <div class="exp-body">
           <div class="exp-hint">You answered this on ${Utils.escapeHtml(TimeCapsule.fmtDate(capsule.dateKey))}.</div>
-          <div class="exp-question small" style="margin-top:8px;">${item.prompt}</div>
+          <div class="exp-question small" style="margin-top:8px;">${Utils.escapeHtml(item.prompt)}</div>
           <div class="options-stack" id="opts" style="margin-top:24px;">
-            ${item.options.map((opt, i) => `<button class="option-card" data-i="${i}">${opt}</button>`).join('')}
+            ${item.options.map((opt, i) => `<button class="option-card" data-i="${i}">${Utils.escapeHtml(opt)}</button>`).join('')}
           </div>
           <div id="reveal-slot"></div>
         </div>
       </div>
     `;
-    root.querySelector('#btn-back').addEventListener('click', () => App.navigate('timecapsules'));
+    root.querySelector('#btn-back').addEventListener('click', () => App.back());
 
     root.querySelectorAll('.option-card').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -807,7 +816,7 @@ const Screens = (() => {
         </button>
       </div>
     `;
-    root.querySelector('#btn-back').addEventListener('click', () => App.navigate('modes'));
+    root.querySelector('#btn-back').addEventListener('click', () => App.back());
     root.querySelectorAll('[data-ptp-mode]').forEach(btn => {
       btn.addEventListener('click', () => App.startPassThePhone(btn.dataset.ptpMode));
     });
@@ -844,7 +853,7 @@ const Screens = (() => {
             <div class="exp-question small">${question}</div>
             ${(!isP1 && match.gameMode === 'predict_me') ? `<div class="exp-hint">${item.prompt}</div>` : ''}
             <div class="options-stack" style="margin-top:24px;">
-              ${item.options.map((opt, i) => `<button class="option-card" data-i="${i}">${opt}</button>`).join('')}
+              ${item.options.map((opt, i) => `<button class="option-card" data-i="${i}">${Utils.escapeHtml(opt)}</button>`).join('')}
             </div>
           </div>
         </div>
@@ -960,7 +969,7 @@ const Screens = (() => {
         `}
       </div>
     `;
-    root.querySelector('#btn-back').addEventListener('click', () => App.navigate('profile'));
+    root.querySelector('#btn-back').addEventListener('click', () => App.back());
 
     root.querySelectorAll('[data-delete-moment]').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -1003,5 +1012,5 @@ const Screens = (() => {
     `;
   }
 
-  return { home, modes, daily, profile, settings, experience, sessionEnd, confirmModal, toast, bindNav, bottomNav, errorState, moments, openSaveSheet, timeCapsules, timeCapsuleRevisit, ptpSetup, ptpPlay, ptpResults };
+  return { home, modes, daily, profile, settings, experience, sessionEnd, confirmModal, toast, bindNav, bottomNav, errorState, moments, openSaveSheet, timeCapsules, timeCapsuleRevisit, ptpSetup, ptpPlay, ptpResults, brandEasterEgg };
 })();
