@@ -1,8 +1,8 @@
 {
   "name": "between",
   "private": true,
-  "version": "4.0.0",
-  "description": "BETWEEN \u2014 curiosity, choice, knowledge, games, memory and connection. Static PWA with optional anonymous crowd data.",
+  "version": "4.0.3",
+  "description": "BETWEEN — curiosity, choice, knowledge, games, memory and connection. Static PWA with optional anonymous crowd data.",
   "dependencies": {
     "@netlify/blobs": "11.1.0"
   }
