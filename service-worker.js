@@ -1,8 +1,9 @@
 // BETWEEN — service worker: offline-first app shell caching
-const CACHE_NAME = 'between-v4.0.1';
+const CACHE_NAME = 'between-v4.0.2';
 const PRECACHE_URLS = [
   './',
   './index.html',
+  './js/boot-guard.js',
   './manifest.webmanifest',
   './icons/between-mark.svg',
   './css/style.css',

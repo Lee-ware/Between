@@ -441,11 +441,45 @@ const App = (() => {
   }
 
   // ---------------- Boot ----------------
+  function getInitialScreen() {
+    const hash = String(location.hash || '').replace(/^#/, '').trim();
+    const allowed = new Set(TAB_SCREENS);
+    return allowed.has(hash) ? hash : 'home';
+  }
+
+  function dismissBoot(boot) {
+    if (!boot) return;
+    boot.style.opacity = '0';
+    setTimeout(() => { if (boot && boot.parentNode) boot.remove(); }, 180);
+  }
+
+  function showFatalBootError(error) {
+    console.error('[BETWEEN] startup failed', error);
+    if (window.__BETWEEN_BOOT_GUARD && typeof window.__BETWEEN_BOOT_GUARD.fail === 'function') {
+      window.__BETWEEN_BOOT_GUARD.fail('app initialization error');
+      return;
+    }
+    const boot = document.getElementById('boot-screen');
+    const appRoot = root();
+    if (!appRoot) return;
+    if (boot) boot.remove();
+    appRoot.innerHTML = `
+      <div class="screen">
+        <div class="empty-state" data-error-state>
+          <div style="font-weight:800;font-size:17px;color:var(--text);margin-bottom:6px;">BETWEEN couldn’t start.</div>
+          <div style="margin-bottom:20px;">Your saved progress is still on this device. Try again to restart the app.</div>
+          <button class="btn btn-primary" id="btn-start-retry">Try again</button>
+        </div>
+      </div>`;
+    const retry = appRoot.querySelector('#btn-start-retry');
+    if (retry) retry.onclick = () => location.reload();
+  }
+
   function init() {
-    runContentAudit();
-    registerServiceWorker();
-    bindKeyboard();
     try {
+      runContentAudit();
+      registerServiceWorker();
+      bindKeyboard();
       const params = new URLSearchParams(location.search);
       const duelToken = params.get('duel');
       if (duelToken) { window.__BETWEEN_DUEL_TOKEN = duelToken; history.replaceState({screen:'duel'}, '', location.pathname + '#duel'); }
@@ -458,20 +492,26 @@ const App = (() => {
           window.__BETWEEN_IMPORTED_PACK = pack.title;
         }
       }
-    } catch(e) {}
 
-    // Last-resort net: catch anything that slips past individual render try/catches.
-    window.addEventListener('error', () => {
-      if (!document.querySelector('.empty-state[data-error-state]')) {
-        safeRender(() => { throw new Error('uncaught'); }, 'window.onerror');
+      // Last-resort net: catch anything that slips past individual render try/catches.
+      window.addEventListener('error', () => {
+        if (!document.querySelector('.empty-state[data-error-state]')) {
+          safeRender(() => { throw new Error('uncaught'); }, 'window.onerror');
+        }
+      });
+
+      const boot = document.getElementById('boot-screen');
+      const initialScreen = getInitialScreen();
+      pushHistory({ screen: initialScreen }, true);
+      renderTabScreen(initialScreen, true);
+      // Never leave the boot screen covering a successfully rendered app.
+      if (window.__BETWEEN_BOOT_GUARD && typeof window.__BETWEEN_BOOT_GUARD.complete === 'function') {
+        window.__BETWEEN_BOOT_GUARD.complete();
+      } else {
+        dismissBoot(boot);
       }
-    });
-
-    const boot = document.getElementById('boot-screen');
-    pushHistory({ screen: initialScreen }, true);
-    renderTabScreen(initialScreen, true);
-    if (boot) {
-      requestAnimationFrame(() => { boot.style.opacity = '0'; setTimeout(() => boot.remove(), 180); });
+    } catch (error) {
+      showFatalBootError(error);
     }
   }
 
