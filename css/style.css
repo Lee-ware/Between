@@ -552,3 +552,7 @@ h1,h2,h3,p{ margin:0; }
 @keyframes pulseAnim{ 0%{ transform:scale(1);} 40%{ transform: scale(1.05);} 100%{ transform:scale(1);} }
 
 ::selection{ background: rgba(124,92,255,0.4); }
+
+
+/* BETWEEN 4.0 additions */
+.creator-credit{color:var(--text-mute);font-size:10px;letter-spacing:.08em;text-align:center;margin:30px 0 14px;text-transform:uppercase}.report-options{display:flex;flex-direction:column;gap:8px;margin:14px 0}.report-option{display:flex;align-items:center;gap:10px;padding:11px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2);font-size:13px}.report-note{width:100%;min-height:82px;resize:vertical;border:1px solid var(--border);border-radius:12px;background:var(--surface-2);color:var(--text);padding:12px;font:inherit}.custom-pack-editor{padding:12px;border:1px solid var(--border);border-radius:16px;margin-top:14px;background:var(--surface-2)}.custom-pack-editor input,.custom-pack-editor select,.share-link{display:block;width:100%;box-sizing:border-box;margin-top:8px;background:var(--surface-1);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:12px;font:inherit}.share-link{min-height:110px;resize:vertical}.danger-btn{color:var(--c-random)!important}.mode-chip{white-space:nowrap}.btn-row{display:flex;flex-wrap:wrap;gap:8px}.btn-row .btn{flex:1 1 auto}

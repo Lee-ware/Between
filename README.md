@@ -1,8 +1,8 @@
-# BETWEEN — V3.5.1
+# BETWEEN — V4.0.0
 
 A curiosity + choice + knowledge entertainment playground. Mobile-first, installable PWA, local-first (no accounts or personal tracking; optional anonymous Majority aggregate data).
 
-**This is V3.5.1** — the local-first PWA now also has optional anonymous Majority crowd data through one Netlify Function. See the V3 changelogs for what changed and `QA_REPORT.md` for testing notes.
+**This is V4.0.0** — the stable 3.5.1 baseline expanded into a durable, local-first experience engine with adaptive difficulty, Question Lab, account-free Duel links, share cards, content reporting, capability detection, separated versioning, and an optional anonymous Majority crowd function. See `CHANGELOG_V4_FINAL.md` and the QA notes.
 
 ## What's inside
 

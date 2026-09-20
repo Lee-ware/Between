@@ -1,5 +1,5 @@
 // BETWEEN — service worker: offline-first app shell caching
-const CACHE_NAME = 'between-v3.5.1-crowd-fixes';
+const CACHE_NAME = 'between-v4.0.1';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -8,16 +8,23 @@ const PRECACHE_URLS = [
   './css/style.css',
   './js/data.js',
   './js/utils.js',
+  './js/version.js',
+  './js/capabilities.js',
   './js/storage.js',
   './js/scoring.js',
   './js/tendency.js',
   './js/moments.js',
   './js/timecapsule.js',
+  './js/reports.js',
+  './js/packs.js',
+  './js/share.js',
+  './js/crowd.js',
   './js/backup.js',
   './js/passthephone.js',
   './js/engine.js',
   './js/modes.js',
   './js/screens.js',
+  './js/diagnostics.js',
   './js/app.js',
   './icons/icon-72.png',
   './icons/icon-96.png',

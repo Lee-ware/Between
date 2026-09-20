@@ -35,9 +35,7 @@ const Modes = (() => {
     if (btn) btn.addEventListener('click', () => ctx.next());
   }
 
-  function vibrate(ms) {
-    if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} }
-  }
+  function vibrate(ms, kind='tap') { if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } Utils.tone(kind); }
 
   // ---------------------------------------------------------------
   // PICK ONE
@@ -65,21 +63,11 @@ const Modes = (() => {
         vibrate(12);
 
         const chosenText = opts[Number(btn.dataset.i)];
-        ctx.reportResult({ success: null, label: 'Locked in.', chosenText, item });
+        ctx.reportResult({ success: null, label: 'Choice made.', chosenText, item });
 
-        setTimeout(() => {
-          const slot = container.querySelector('#reveal-slot');
-          slot.innerHTML = `
-            ${mysteryPrefix(ctx, item)}
-            <div class="reveal-card">
-              <div class="reveal-sub" style="margin-bottom:6px;">Locked in.</div>
-              <div class="reveal-answer">${chosenText}</div>
-              <div class="reveal-sub" style="margin-top:10px;">${Utils.pick(REFLECTIONS)}</div>
-            </div>
-            ${nextButtonHTML()}
-          `;
-          bindNext(container, ctx);
-        }, 260);
+        // Pick One is deliberately frictionless: the tap is the commitment,
+        // so there is no redundant "Locked in" / "Next" step.
+        setTimeout(() => ctx.next(), 120);
       });
     });
   }
@@ -122,7 +110,7 @@ const Modes = (() => {
           else if (idx === chosenIdx) b.classList.add('incorrect');
           else b.classList.add('dim');
         });
-        vibrate(success ? 14 : 8);
+        vibrate(success ? 14 : 8, success ? 'success' : 'error');
 
         ctx.reportResult({
           success,

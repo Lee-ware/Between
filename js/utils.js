@@ -131,6 +131,39 @@ const Utils = (() => {
   function fmtPct(n) {
     return `${Math.round(n)}%`;
   }
+  function tone(kind='tap') {
+    try {
+      if (typeof Storage !== 'undefined' && !Storage.getSettings().sound) return;
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      const ac = Utils._audio || (Utils._audio = new AC());
+      if (ac.state === 'suspended') { ac.resume().catch(() => {}); }
+
+      // BETWEEN uses tiny tactile sounds, not music or arcade-style effects.
+      // Each kind is deliberately short and quiet, but distinct enough to be
+      // heard on a normal phone speaker.
+      const now = ac.currentTime;
+      const profiles = {
+        tap:     [{f: 330, t: 0,    d: 0.055, v: 0.060}, {f: 250, t: 0.028, d: 0.035, v: 0.030}],
+        success: [{f: 620, t: 0,    d: 0.065, v: 0.055}, {f: 780, t: 0.045, d: 0.075, v: 0.045}],
+        error:   [{f: 190, t: 0,    d: 0.075, v: 0.055}, {f: 145, t: 0.050, d: 0.075, v: 0.040}],
+        reveal:  [{f: 520, t: 0,    d: 0.090, v: 0.045}],
+      };
+      const profile = profiles[kind] || profiles.tap;
+      profile.forEach(({f, t, d, v}) => {
+        const o = ac.createOscillator();
+        const g = ac.createGain();
+        const start = now + t;
+        o.type = 'sine';
+        o.frequency.setValueAtTime(f, start);
+        g.gain.setValueAtTime(0.0001, start);
+        g.gain.exponentialRampToValueAtTime(v, start + 0.006);
+        g.gain.exponentialRampToValueAtTime(0.0001, start + d);
+        o.connect(g).connect(ac.destination);
+        o.start(start);
+        o.stop(start + d + 0.005);
+      });
+    } catch(e) {}
+  }
 
   // ---- Icons (feather-style inline SVG strings) ----
   const ICONS = {
@@ -157,6 +190,7 @@ const Utils = (() => {
     globe: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20 15 15 0 010-20z"/></svg>`,
     download: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>`,
     trash: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14"/></svg>`,
+    flag: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4c5-3 9 3 14 0v10c-5 3-9-3-14 0"/></svg>`,
     info: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-5M12 8h.01"/></svg>`,
     lock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>`,
   };
@@ -197,6 +231,6 @@ const Utils = (() => {
   return {
     seededRandom, hashString, todayKey, pick, shuffle, clamp, cap,
     stripTrailingPunct, stripFramingPrefix, parseBinary, isYesNoShaped, parseList,
-    fmtNum, fmtPct, icon, brandMark, escapeHtml
+    fmtNum, fmtPct, tone, icon, brandMark, escapeHtml
   };
 })();

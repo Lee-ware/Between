@@ -14,7 +14,7 @@ const Backup = (() => {
   const APP_TAG = 'BETWEEN';
   const EXPORT_VERSION = 1;
 
-  const ARRAY_KEYS = ['history', 'moments', 'timeCapsules'];
+  const ARRAY_KEYS = ['history', 'moments', 'timeCapsules', 'reports', 'packs'];
   const OBJECT_KEYS = ['stats', 'settings', 'progress', 'tendency'];
   const KNOWN_MODES = new Set(['pick_one','knowledge','scenario','majority','estimation','prediction','random','brain']);
 
@@ -27,6 +27,8 @@ const Backup = (() => {
       tendency: Storage.getTendency(),
       moments: Storage.getMoments(),
       timeCapsules: Storage.getTimeCapsules(),
+      reports: Storage.getReports(),
+      packs: Storage.getPacks(),
     };
   }
 
@@ -91,6 +93,28 @@ const Backup = (() => {
       }));
   }
 
+
+  function cleanReports(arr) {
+    return (Array.isArray(arr) ? arr : []).filter(x => x && typeof x === 'object')
+      .slice(-300).map(x => ({
+        id: cleanString(x.id, 100) || ('report_' + Math.random().toString(36).slice(2)),
+        itemId: cleanString(x.itemId, 80) || '',
+        mode: KNOWN_MODES.has(String(x.mode || '')) ? String(x.mode) : 'unknown',
+        reason: cleanString(x.reason, 80) || 'other',
+        note: cleanString(x.note, 500) || '',
+        ts: Number.isFinite(x.ts) ? x.ts : Date.now(),
+      }));
+  }
+
+  function cleanPacks(arr) {
+    return (Array.isArray(arr) ? arr : []).slice(-50).map(x => {
+      try {
+        const cleaned = typeof Packs !== 'undefined' ? Packs.cleanPack(x) : null;
+        return cleaned;
+      } catch (e) { return null; }
+    }).filter(Boolean);
+  }
+
   function cleanStats(raw) {
     const s = Object.assign(Storage.defaultStats(), raw && typeof raw === 'object' ? raw : {});
     const numeric = ['answered','correctKnowledge','totalKnowledge','pickOneCount','scenarioCount','majorityCorrect','majorityTotal','estimationTotal','estimationAccuracySum','predictionCount','randomCount','brainBestScore','brainCount','currentStreak','longestStreak','totalSessions'];
@@ -152,6 +176,8 @@ const Backup = (() => {
     if (d.tendency) Storage.setTendency(cleanTendency(d.tendency));
     if (Array.isArray(d.moments)) Storage.setMoments(cleanMoments(d.moments));
     if (Array.isArray(d.timeCapsules)) Storage.setTimeCapsules(cleanCapsules(d.timeCapsules));
+    if (Array.isArray(d.reports)) Storage.setReports(cleanReports(d.reports));
+    if (Array.isArray(d.packs)) Storage.setPacks(cleanPacks(d.packs));
     Storage.clearSession();
   }
 

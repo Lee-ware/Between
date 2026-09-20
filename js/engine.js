@@ -71,6 +71,15 @@ const Engine = (() => {
     // alternating emotional register instead of staying flat.
     if (item.mood && avoidMoods.filter(m => m === item.mood).length >= 2) score -= 20;
 
+    // Adaptive difficulty only applies where correctness is measurable.
+    // Subjective modes are never treated as right/wrong.
+    const target = adaptiveTarget(item, progress);
+    if (target) {
+      if (item.difficulty === target) score += 34;
+      else if ((target === 'hard' && item.difficulty === 'medium') || (target === 'medium' && item.difficulty === 'easy')) score += 10;
+      else score -= 10;
+    }
+
     // Slight randomness so it never feels like a formula
     score += Math.random() * 18;
 
@@ -188,9 +197,9 @@ const Engine = (() => {
     Storage.updateProgress(p => {
       if (!p.dailyDoneDates[dateKey]) p.dailyDoneDates[dateKey] = {};
       p.dailyDoneDates[dateKey][key] = true;
-      // prune old dates (keep last 14)
+      // prune old dates (keep a full year)
       const dates = Object.keys(p.dailyDoneDates).sort();
-      while (dates.length > 14) {
+      while (dates.length > 365) {
         delete p.dailyDoneDates[dates.shift()];
       }
     });
@@ -219,6 +228,14 @@ const Engine = (() => {
       else break;
     }
     return picks.slice(0, n);
+  }
+
+  function forYou(n = 3) {
+    const stats = Storage.getStats(); const p = Storage.getProgress();
+    const topMode = Object.entries(stats.byMode||{}).sort((a,b)=>b[1]-a[1])[0]?.[0];
+    const topCat = Object.entries(stats.byCategory||{}).sort((a,b)=>b[1].count-a[1].count)[0]?.[0];
+    const pool = ITEMS.filter(i => !p.recentIds.includes(i.id));
+    return pool.map(i => { let score=i.hook_score||50; if(i.mode===topMode)score+=18; if(i.category===topCat)score+=14; if(!p.seenIds.includes(i.id))score+=12; if(i.mode==='knowledge' || i.mode==='brain')score+=6; score+=Math.random()*12; return {i,score}; }).sort((a,b)=>b.score-a.score).slice(0,n).map(x=>x.i);
   }
 
   return {

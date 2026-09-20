@@ -15,6 +15,8 @@ const Storage = (() => {
     timeCapsules: `${NS}:capsules`, // answers saved to revisit later
     crowdVoted: `${NS}:crowdvoted`, // which Majority items this device already voted on
     brandEasterEgg: `${NS}:brand_easter_egg`, // rare logo easter egg shown once
+    reports: `${NS}:reports`,
+    packs: `${NS}:packs`,
   };
 
   // ---- Storage schema versioning & migrations ----
@@ -24,10 +26,14 @@ const Storage = (() => {
   // Capsule data), bump SCHEMA_VERSION and add a numbered function to
   // MIGRATIONS below — runMigrations() will call every step between the
   // person's stored version and the current one, in order, once at boot.
-  const SCHEMA_VERSION = 1;
+  const SCHEMA_VERSION = 2;
   const SCHEMA_KEY = 'between:schema_version';
   const MIGRATIONS = {
-    // 2: () => { /* example: move `history` into IndexedDB, transform shape, etc. */ },
+    2: () => {
+      // v2 is additive: older installs keep their existing local data and gain
+      // empty containers for reports/packs. Large structured archives remain
+      // local-first; the API is ready for an IndexedDB backend without changing callers.
+    },
   };
 
   function runMigrations() {
@@ -191,6 +197,12 @@ const Storage = (() => {
       return capped;
     },
 
+    getReports: () => read(KEYS.reports, []),
+    setReports: (a) => write(KEYS.reports, Array.isArray(a) ? a.slice(-300) : []),
+    updateReports: (mutator) => { const a = api.getReports(); mutator(a); write(KEYS.reports, a.length > 300 ? a.slice(-300) : a); return a; },
+    getPacks: () => read(KEYS.packs, []),
+    setPacks: (a) => write(KEYS.packs, Array.isArray(a) ? a.slice(-50) : []),
+    updatePacks: (mutator) => { const a = api.getPacks(); mutator(a); write(KEYS.packs, a.length > 50 ? a.slice(-50) : a); return a; },
     getCrowdVoted: () => read(KEYS.crowdVoted, []),
     getBrandEasterEggSeen: () => read(KEYS.brandEasterEgg, false) === true,
     markBrandEasterEggSeen: () => write(KEYS.brandEasterEgg, true),

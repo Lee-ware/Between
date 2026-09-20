@@ -75,6 +75,12 @@ const Screens = (() => {
         </div>
 
         <div class="section-head">
+          <div class="section-title">For you</div>
+          <div class="section-link" style="pointer-events:none;">Based on what you’ve played lately</div>
+        </div>
+        <div class="picks-row">${Engine.forYou(3).map(p => pickCardHTML(p)).join('')}</div>
+
+        <div class="section-head">
           <div class="section-title">Explore</div>
           <button class="section-link" data-nav="modes">See all</button>
         </div>
@@ -93,6 +99,7 @@ const Screens = (() => {
         </div>
 
         ${insight ? `<div class="insight-banner">${Utils.icon('sparkle')} ${insight}</div>` : ''}
+        <div class="creator-credit">BETWEEN · Developed by THEE LPM</div>
       </div>
       ${bottomNav('home')}
     `;
@@ -172,9 +179,9 @@ const Screens = (() => {
           <div><div class="mode-card-title">Pass the Phone</div><div class="mode-card-sub">Same-device, two players, no accounts</div></div>
         </button>
 
-        <div class="section-head"><div class="section-title">Coming later</div></div>
-        ${lockedModeCard('Create Your Own', 'sparkle', 'Design your own Pick One, quiz, or scenario.')}
-        ${lockedModeCard('Between Duels', 'layers', 'Challenge a friend remotely via a link.')}
+        <div class="section-head"><div class="section-title">Play With Someone</div></div>
+        <button class="mode-card" id="btn-duel"><div class="mode-card-icon" style="background:var(--c-prediction-soft);color:var(--c-prediction)">${Utils.icon('layers')}</div><div><div class="mode-card-title">Between Duel</div><div class="mode-card-sub">Answer, share a link, compare without accounts</div></div></button>
+        <button class="mode-card" id="btn-packs"><div class="mode-card-icon" style="background:var(--c-random-soft);color:var(--c-random)">${Utils.icon('sparkle')}</div><div><div class="mode-card-title">Question Lab</div><div class="mode-card-sub">Make private packs and share them</div></div></button>
       </div>
       ${bottomNav('modes')}
     `;
@@ -183,6 +190,8 @@ const Screens = (() => {
       el.addEventListener('click', () => App.beginSession({ type: 'mode', mode: el.dataset.mode }));
     });
     root.querySelector('#btn-pass-phone').addEventListener('click', () => App.navigate('ptpsetup'));
+    root.querySelector('#btn-duel').addEventListener('click', () => App.navigate('duel'));
+    root.querySelector('#btn-packs').addEventListener('click', () => App.navigate('packs'));
   }
 
   function modeCardHTML(mode) {
@@ -407,7 +416,7 @@ const Screens = (() => {
           <button class="btn btn-sm btn-ghost" id="btn-install">Install</button>
         </div>
         <div class="settings-row"><div><div class="settings-label">Privacy</div><div class="settings-sub">Your personal progress stays on this device. Majority votes are sent anonymously to build crowd results.</div></div></div>
-        <div class="settings-row"><div><div class="settings-label">About BETWEEN</div><div class="settings-sub">V3.5.1 \u00b7 360 experiences \u00b7 local-first</div></div></div>
+        <div class="settings-row"><div><div class="settings-label">About BETWEEN</div><div class="settings-sub">V${BETWEEN_VERSION.app} \u00b7 360 experiences \u00b7 local-first \u00b7 PWA</div><div class="settings-sub" style="margin-top:5px;">Developed by ${BETWEEN_VERSION.creator}</div></div></div>
 
         <div class="section-head"><div class="section-title">Data</div></div>
         <div class="btn-row" style="margin-top:6px;">
@@ -424,6 +433,8 @@ const Screens = (() => {
     root.querySelector('#sw-sound').addEventListener('click', (e) => {
       const on = Storage.updateSettings(x => x.sound = !x.sound).sound;
       e.currentTarget.classList.toggle('on', on);
+      // A tiny preview makes the setting immediately understandable.
+      if (on) Utils.tone('tap');
     });
     root.querySelector('#sw-motion').addEventListener('click', (e) => {
       const on = Storage.updateSettings(x => x.reducedMotion = !x.reducedMotion).reducedMotion;
@@ -491,6 +502,7 @@ const Screens = (() => {
           </span>
           <div class="topbar-right">
             <span class="progress-dot">${opts.progressLabel || ''}</span>
+            <button class="icon-btn icon-btn-sm" id="btn-report" aria-label="Report this experience">${Utils.icon('flag')}</button>
             <button class="icon-btn icon-btn-sm" id="btn-save-moment" aria-label="Save this moment" disabled>${Utils.icon('bookmark')}</button>
           </div>
         </div>
@@ -498,6 +510,7 @@ const Screens = (() => {
       </div>
     `;
     root.querySelector('#btn-back').addEventListener('click', () => App.exitExperience());
+    root.querySelector('#btn-report').addEventListener('click', () => App.reportItem(item));
 
     const mount = root.querySelector('#mode-mount');
     Modes.render(mount, item, {
@@ -523,12 +536,14 @@ const Screens = (() => {
             <div class="result-stat"><b>${summary.modesPlayed}</b><span>Modes played</span></div>
           </div>
           <div style="margin-top:30px; display:flex; flex-direction:column; gap:12px;">
+            <button class="btn btn-ghost" id="btn-share-round">Share result</button>
             <button class="btn btn-primary" id="btn-again">Go again</button>
             <button class="btn btn-ghost" id="btn-explore">Explore modes</button>
           </div>
         </div>
       </div>
     `;
+    root.querySelector('#btn-share-round').addEventListener('click', async () => { const r = await ShareCards.share('That was your round.', [`${summary.count} answered`, `${summary.modesPlayed} modes played`, summary.accuracy === null ? 'Curiosity over correctness' : `${summary.accuracy}% knowledge accuracy`], 'My BETWEEN round'); toast(r === 'downloaded' ? 'Result card saved.' : 'Result ready to share.'); });
     root.querySelector('#btn-again').addEventListener('click', () => App.beginSession(summary.repeatOpts));
     root.querySelector('#btn-explore').addEventListener('click', () => App.navigate('modes'));
   }
@@ -1012,5 +1027,36 @@ const Screens = (() => {
     `;
   }
 
-  return { home, modes, daily, profile, settings, experience, sessionEnd, confirmModal, toast, bindNav, bottomNav, errorState, moments, openSaveSheet, timeCapsules, timeCapsuleRevisit, ptpSetup, ptpPlay, ptpResults, brandEasterEgg };
+  function openReportSheet(item, onSubmit) {
+    const existing=document.getElementById('between-report-sheet'); if(existing) existing.remove();
+    const el=document.createElement('div'); el.id='between-report-sheet'; el.className='modal-backdrop';
+    el.innerHTML=`<div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="report-title"><div class="confirm-title" id="report-title">Report this experience</div><div class="confirm-body">What needs attention? This report is saved locally for now.</div><div class="report-options">${Reports.REASONS.map(([v,l])=>`<label class="report-option"><input type="radio" name="report-reason" value="${v}"><span>${l}</span></label>`).join('')}</div><textarea id="report-note" class="report-note" maxlength="500" placeholder="Optional note"></textarea><div class="confirm-actions"><button class="btn btn-ghost" id="report-cancel">Cancel</button><button class="btn btn-primary" id="report-send">Save report</button></div></div>`;
+    document.body.appendChild(el); el.querySelector('#report-cancel').onclick=()=>el.remove();
+    el.querySelector('#report-send').onclick=()=>{const chosen=el.querySelector('input[name="report-reason"]:checked');if(!chosen){toast('Choose a reason first.');return;}onSubmit(chosen.value,el.querySelector('#report-note').value);el.remove();};
+  }
+
+  function packs(root) {
+    const all=Packs.getAll();
+    root.innerHTML=`<div class="screen"><div class="topbar"><button class="icon-btn" id="btn-back" aria-label="Back">${Utils.icon('back')}</button><h1 style="font-size:18px;font-weight:900;">Question Lab</h1><div style="width:40px"></div></div><p style="color:var(--text-dim);font-size:13px;">Private by default. Build your own mini experiences, keep them on this device, or share a pack link.</p><div class="btn-row"><button class="btn btn-primary" id="btn-new-pack">Create a pack</button><button class="btn btn-ghost" id="btn-import-pack">Import pack</button></div><div class="section-head"><div class="section-title">Your packs</div></div><div id="pack-list">${all.length?all.map(packCardHTML).join(''):`<div class="empty-state"><div class="icon">${Utils.icon('sparkle')}</div><div style="font-weight:800;color:var(--text);margin-bottom:6px;">Nothing here yet.</div><div>Create a small pack for friends, family, school, or future you.</div></div>`}</div></div>`;
+    if (window.__BETWEEN_IMPORTED_PACK) { const importedTitle=window.__BETWEEN_IMPORTED_PACK; window.__BETWEEN_IMPORTED_PACK=null; setTimeout(()=>toast(`Added “${Utils.escapeHtml(importedTitle)}” to your Question Lab.`),0); }
+    root.querySelector('#btn-back').onclick=()=>App.back(); root.querySelector('#btn-new-pack').onclick=()=>packEditor(root); root.querySelector('#btn-import-pack').onclick=()=>{const input=document.createElement('input');input.type='file';input.accept='application/json,.json';input.onchange=()=>{const f=input.files?.[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{Packs.importText(reader.result);packs(root);toast('Pack imported.');}catch(e){toast(e.message||'Could not import pack.');}};reader.readAsText(f);};input.click();};
+    root.querySelectorAll('[data-play-pack]').forEach(b=>b.onclick=()=>playPack(Packs.getAll().find(p=>p.id===b.dataset.playPack)));
+    root.querySelectorAll('[data-share-pack]').forEach(b=>b.onclick=async()=>{const p=Packs.getAll().find(x=>x.id===b.dataset.sharePack);try{const url=Packs.link(p);if(Capabilities.canShare)await navigator.share({title:p.title,text:`Play my BETWEEN pack: ${p.title}`,url});else{await navigator.clipboard?.writeText(url);toast('Pack link copied.');}}catch(e){}});
+    root.querySelectorAll('[data-export-pack]').forEach(b=>b.onclick=()=>Packs.exportPack(Packs.getAll().find(x=>x.id===b.dataset.exportPack)));
+    root.querySelectorAll('[data-delete-pack]').forEach(b=>b.onclick=()=>{Packs.remove(b.dataset.deletePack);packs(root);});
+  }
+  function packCardHTML(p){return `<div class="mode-card" style="align-items:flex-start"><div class="mode-card-icon" style="background:var(--c-random-soft);color:var(--c-random)">${Utils.icon('sparkle')}</div><div style="flex:1"><div class="mode-card-title">${Utils.escapeHtml(p.title)}</div><div class="mode-card-sub">${p.items.length} experiences${p.description?' · '+Utils.escapeHtml(p.description):''}</div><div class="btn-row" style="margin-top:10px"><button class="btn btn-sm btn-primary" data-play-pack="${p.id}">Play</button><button class="btn btn-sm btn-ghost" data-share-pack="${p.id}">Share</button><button class="btn btn-sm btn-ghost" data-export-pack="${p.id}">Export</button><button class="btn btn-sm danger-btn" data-delete-pack="${p.id}">Delete</button></div></div></div>`;}
+  function packEditor(root){
+    root.innerHTML=`<div class="screen"><div class="topbar"><button class="icon-btn" id="btn-back" aria-label="Back">${Utils.icon('back')}</button><h1 style="font-size:18px;font-weight:900;">Create a pack</h1><div style="width:40px"></div></div><label class="settings-label">Pack name<input class="estimate-input" id="pack-title" maxlength="80" placeholder="My Friends"></label><label class="settings-label" style="margin-top:14px">Description<input class="estimate-input" id="pack-desc" maxlength="240" placeholder="Questions for the group"></label><div id="custom-items"></div><button class="btn btn-ghost btn-block" id="add-item">+ Add experience</button><button class="btn btn-primary btn-block" id="save-pack" style="margin-top:12px">Save pack</button></div>`;
+    root.querySelector('#btn-back').onclick=()=>packs(root); const items=[]; const mount=root.querySelector('#custom-items'); const add=()=>{if(items.length>=10){toast('Packs are capped at 10 custom experiences here.');return;} const n=items.length; const row=document.createElement('div');row.className='custom-pack-editor';row.innerHTML=`<div class="section-head"><div class="section-title">Experience ${n+1}</div></div><select class="pack-mode"><option value="pick_one">Pick One</option><option value="scenario">Scenario</option><option value="knowledge">Knowledge</option><option value="prediction">Prediction</option></select><input class="estimate-input pack-prompt" placeholder="Question or situation"><input class="estimate-input pack-cat" placeholder="Category" value="Custom"><input class="estimate-input pack-a" placeholder="Option A"><input class="estimate-input pack-b" placeholder="Option B"><select class="pack-answer"><option value="0">Knowledge answer: A</option><option value="1">Knowledge answer: B</option></select>`;mount.appendChild(row);items.push(row);}; add(); root.querySelector('#add-item').onclick=add; root.querySelector('#save-pack').onclick=()=>{const pack={title:root.querySelector('#pack-title').value,description:root.querySelector('#pack-desc').value,items:items.map((r,i)=>{const mode=r.querySelector('.pack-mode').value;const opts=[r.querySelector('.pack-a').value,r.querySelector('.pack-b').value];return {id:`custom_${Date.now()}_${i}`,mode,category:r.querySelector('.pack-cat').value,prompt:r.querySelector('.pack-prompt').value,options:opts,answer_index:mode==='knowledge'?Number(r.querySelector('.pack-answer').value):undefined,difficulty:'medium'};})};try{Packs.save(pack);packs(root);toast('Pack saved.');}catch(e){toast(e.message||'Could not save pack.');}};
+  }
+  function playPack(pack){if(!pack||!pack.items.length)return;App.beginSession({type:'pack',packItems:pack.items.slice(0,10),mode:null,firstItem:pack.items[0]});}
+  function duelLanding(root){
+    const ids=Engine.selectNext?Engine.ITEMS.filter(i=>['pick_one','scenario'].includes(i.mode)).slice(0,5):[];
+    root.innerHTML=`<div class="screen"><div class="topbar"><button class="icon-btn" id="btn-back" aria-label="Back">${Utils.icon('back')}</button><h1 style="font-size:18px;font-weight:900;">Between Duel</h1><div style="width:40px"></div></div><div class="empty-state"><div class="icon">${Utils.icon('layers')}</div><div style="font-weight:900;font-size:18px;color:var(--text);margin-bottom:8px">Challenge someone.</div><div style="margin-bottom:20px">Answer a short set, then share a link. No accounts. The link contains only question IDs and your answers.</div><button class="btn btn-primary" id="btn-create-duel">Create challenge</button></div></div>`;root.querySelector('#btn-back').onclick=()=>App.back();root.querySelector('#btn-create-duel').onclick=()=>createDuel(root);}
+  function createDuel(root){const qs=Engine.ITEMS.filter(i=>['pick_one','scenario'].includes(i.mode)&&Array.isArray(i.options)).sort(()=>Math.random()-.5).slice(0,5);let answers=[];let idx=0;const render=()=>{const q=qs[idx];root.innerHTML=`<div class="screen"><div class="topbar"><button class="icon-btn" id="btn-back" aria-label="Back">${Utils.icon('back')}</button><span class="mode-chip">DUEL ${idx+1}/${qs.length}</span><div></div></div><div class="exp-body"><div class="exp-question small">${Utils.escapeHtml(q.prompt)}</div><div class="options-stack">${q.options.map((o,i)=>`<button class="option-card" data-i="${i}">${Utils.escapeHtml(o)}</button>`).join('')}</div></div></div>`;root.querySelector('#btn-back').onclick=()=>App.navigate('duel');root.querySelectorAll('.option-card').forEach(b=>b.onclick=()=>{answers[idx]=Number(b.dataset.i);idx++;if(idx<qs.length)render();else{const token=btoa(JSON.stringify({v:1,ids:qs.map(q=>q.id),a:answers})).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');const url=`${location.origin}${location.pathname}?duel=${token}`;root.innerHTML=`<div class="screen"><div class="exp-body"><div class="result-badge">${Utils.icon('layers')}</div><div class="result-title">Challenge ready.</div><div class="result-sub">Send this link to your friend. They answer the same five questions and see where you agreed.</div><textarea class="share-link" readonly>${Utils.escapeHtml(url)}</textarea><button class="btn btn-primary btn-block" id="share-duel">Share challenge</button><button class="btn btn-ghost btn-block" id="copy-duel">Copy link</button></div></div>`;root.querySelector('#share-duel').onclick=async()=>{try{if(Capabilities.canShare)await navigator.share({title:'BETWEEN Duel',text:'I made you a BETWEEN challenge.',url});else{await navigator.clipboard?.writeText(url);toast('Link copied.');}}catch(e){}};root.querySelector('#copy-duel').onclick=async()=>{await navigator.clipboard?.writeText(url);toast('Link copied.');};}});};render();}
+
+  function duelFromUrl(root, token){try{let s=token.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const d=JSON.parse(atob(s));const qs=d.ids.map(id=>Engine.getItem(id)).filter(Boolean);if(qs.length!==d.ids.length)throw new Error('Missing questions');let idx=0,answers=[];const render=()=>{const q=qs[idx];root.innerHTML=`<div class="screen"><div class="topbar"><span class="mode-chip">DUEL ${idx+1}/${qs.length}</span><div></div></div><div class="exp-body"><div class="exp-hint">Your friend already answered.</div><div class="exp-question small">${Utils.escapeHtml(q.prompt)}</div><div class="options-stack">${q.options.map((o,i)=>`<button class="option-card" data-i="${i}">${Utils.escapeHtml(o)}</button>`).join('')}</div></div></div>`;root.querySelectorAll('.option-card').forEach(b=>b.onclick=()=>{answers[idx]=Number(b.dataset.i);idx++;if(idx<qs.length)render();else{let m=0;qs.forEach((q,i)=>{if(Number(d.a[i])===answers[i])m++;});root.innerHTML=`<div class="screen"><div class="exp-body"><div class="result-badge">${m===qs.length?'🤝':'✨'}</div><div class="result-title">You agreed on ${m}/${qs.length}.</div><div class="result-sub">Compare the answers question by question — the interesting part is where you disagree.</div><button class="btn btn-primary btn-block" id="duel-share-result">Share result</button><button class="btn btn-ghost btn-block" id="duel-done">Done</button></div></div>`;root.querySelector('#duel-share-result').onclick=()=>ShareCards.share(`You agreed on ${m}/${qs.length}.`,['BETWEEN Duel','No accounts. No leaderboard. Just compare the choices.'],'BETWEEN Duel');root.querySelector('#duel-done').onclick=()=>App.navigate('home');}})};render();}catch(e){root.innerHTML=`<div class="screen"><div class="empty-state"><div style="font-weight:800;color:var(--text)">This challenge link is invalid or outdated.</div><button class="btn btn-primary" id="duel-home">Go home</button></div></div>`;root.querySelector('#duel-home').onclick=()=>App.navigate('home');}}
+
+  return { packs, duelLanding, duelFromUrl, openReportSheet, home, modes, daily, profile, settings, experience, sessionEnd, confirmModal, toast, bindNav, bottomNav, errorState, moments, openSaveSheet, timeCapsules, timeCapsuleRevisit, ptpSetup, ptpPlay, ptpResults, brandEasterEgg };
 })();

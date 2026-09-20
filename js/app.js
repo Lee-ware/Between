@@ -3,7 +3,7 @@
 const App = (() => {
   const ROUND_LENGTH = 10;
   const root = () => document.getElementById('app');
-  const TAB_SCREENS = ['home', 'modes', 'daily', 'profile', 'settings', 'moments', 'timecapsules', 'ptpsetup'];
+  const TAB_SCREENS = ['home', 'modes', 'daily', 'profile', 'settings', 'moments', 'timecapsules', 'ptpsetup', 'packs', 'duel'];
 
   let singleFlow = null;      // { returnTo, dailyKey, dailyDateKey }
   let deferredInstallPrompt = null;
@@ -56,6 +56,8 @@ const App = (() => {
         case 'moments': Screens.moments(r); break;
         case 'timecapsules': Screens.timeCapsules(r); break;
         case 'ptpsetup': Screens.ptpSetup(r); break;
+        case 'packs': Screens.packs(r); break;
+        case 'duel': if (window.__BETWEEN_DUEL_TOKEN) { const t=window.__BETWEEN_DUEL_TOKEN; window.__BETWEEN_DUEL_TOKEN=null; Screens.duelFromUrl(r,t); } else Screens.duelLanding(r); break;
         default: Screens.home(r);
       }
     }, screen);
@@ -143,6 +145,7 @@ const App = (() => {
   }
 
   function pickForSession(session) {
+    if (session.type === 'pack') { return session.packItems[Math.max(0, session.round.count)] || null; }
     if (session.type === 'mode') {
       return Engine.selectNext({ mode: session.mode });
     }
@@ -165,6 +168,7 @@ const App = (() => {
       currentItemId: item.id,
       currentIsMystery: type === 'mystery' && opts.isMysteryFirst !== false,
       originTab: currentTab,
+      packItems: Array.isArray(opts.packItems) ? opts.packItems.slice(0, 10) : null,
     };
     Storage.setSession(session);
     pushHistory({ screen: 'experience' });
@@ -204,6 +208,11 @@ const App = (() => {
     // Use the browser history so the same behavior works for the on-screen
     // back button and the device/browser back gesture.
     back();
+  }
+
+  function reportItem(item) {
+    if (Reports.hasReported(item.id)) { Screens.toast('You already reported this experience.'); return; }
+    Screens.openReportSheet(item, (reason, note) => { Reports.add(item, reason, note); Screens.toast('Report saved on this device.'); });
   }
 
   // ---------------- Result handling ----------------
@@ -288,7 +297,7 @@ const App = (() => {
     let session = Storage.getSession();
     if (!session) { navigate('home'); return; }
 
-    if (session.round.count >= ROUND_LENGTH) {
+    if (session.round.count >= ROUND_LENGTH || (session.type === 'pack' && session.round.count >= session.packItems.length)) {
       finishRound(session);
       return;
     }
@@ -324,7 +333,7 @@ const App = (() => {
       Screens.sessionEnd(root(), {
         count: results.length,
         accuracy, longestStreak: longest, modesPlayed,
-        repeatOpts: { type: session.type, mode: session.mode },
+        repeatOpts: { type: session.type, mode: session.mode, packItems: session.packItems },
       });
     }, 'sessionEnd');
   }
@@ -436,6 +445,20 @@ const App = (() => {
     runContentAudit();
     registerServiceWorker();
     bindKeyboard();
+    try {
+      const params = new URLSearchParams(location.search);
+      const duelToken = params.get('duel');
+      if (duelToken) { window.__BETWEEN_DUEL_TOKEN = duelToken; history.replaceState({screen:'duel'}, '', location.pathname + '#duel'); }
+      const packToken = params.get('pack');
+      if (packToken) {
+        const pack = Packs.decode(packToken);
+        if (pack) {
+          Packs.save(pack);
+          history.replaceState({screen:'packs'}, '', location.pathname + '#packs');
+          window.__BETWEEN_IMPORTED_PACK = pack.title;
+        }
+      }
+    } catch(e) {}
 
     // Last-resort net: catch anything that slips past individual render try/catches.
     window.addEventListener('error', () => {
@@ -445,8 +468,8 @@ const App = (() => {
     });
 
     const boot = document.getElementById('boot-screen');
-    pushHistory({ screen: 'home' }, true);
-    renderTabScreen('home', true);
+    pushHistory({ screen: initialScreen }, true);
+    renderTabScreen(initialScreen, true);
     if (boot) {
       requestAnimationFrame(() => { boot.style.opacity = '0'; setTimeout(() => boot.remove(), 180); });
     }
@@ -456,7 +479,7 @@ const App = (() => {
     init, navigate, back,
     beginSession, resumeSession, startSingle,
     exitExperience, handleResult, advanceExperience,
-    promptInstall, runContentAudit, openCapsule, startPassThePhone,
+    promptInstall, runContentAudit, openCapsule, startPassThePhone, reportItem,
   };
 })();
 
