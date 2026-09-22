@@ -1,5 +1,5 @@
 // BETWEEN — service worker: offline-first app shell caching
-const CACHE_NAME = 'between-v4.0.3';
+const CACHE_NAME = 'between-v4.0.4-hotfix';
 const PRECACHE_URLS = [
   './',
   './index.html',

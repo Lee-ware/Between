@@ -46,6 +46,27 @@ const Engine = (() => {
 
   // ---------------- Anti-repeat + scoring-based selection ----------------
 
+  // Adaptive difficulty (brief Section 17): only applies where correctness is
+  // genuinely measurable. Pick One/Scenario/Majority/Prediction/Random never
+  // have a "right answer," so they're deliberately excluded — adapting
+  // difficulty on a subjective choice would be faking a performance signal
+  // that doesn't exist. Estimation is also excluded: its stats track "closest
+  // ever" (a personal best), not a running accuracy rate, so there's no honest
+  // correct/total ratio to adapt from without inventing one.
+  function adaptiveTarget(item, progress) {
+    if (!['knowledge', 'brain'].includes(item.mode)) return null;
+
+    const stats = Storage.getStats();
+    const total = item.mode === 'knowledge' ? stats.totalKnowledge : stats.brainCount;
+    const correct = item.mode === 'knowledge' ? stats.correctKnowledge : stats.brainBestScore;
+    if (total < 5) return null; // not enough history yet to adapt meaningfully
+
+    const rate = correct / total;
+    if (stats.currentStreak >= 3 || rate >= 0.75) return 'hard';
+    if (stats.currentStreak === 0 && rate <= 0.4) return 'easy';
+    return 'medium';
+  }
+
   function scoreCandidate(item, progress, opts) {
     const { avoidModes = [], avoidCategories = [], avoidSimilarity = [], avoidMoods = [], preferMode = null } = opts || {};
     let score = (item.hook_score || 50);
@@ -243,6 +264,6 @@ const Engine = (() => {
     getItem, itemsForMode,
     selectNext, surpriseMe, recordShown,
     getDailySet, isDailyDone, markDailyDone,
-    todaysPicks,
+    todaysPicks, forYou,
   };
 })();
